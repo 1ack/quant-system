@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 环境配置
+.env
+*.local
+
+# 日志
+logs/
+*.log
+
+# 数据
+data/*.db
+*.sqlite3
+
+# 回测结果
+backtest_results/
+*.pkl
+*.parquet
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
