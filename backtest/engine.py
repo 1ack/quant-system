@@ -156,12 +156,11 @@ class BacktestEngine:
         strategy.init(pd.concat(all_data.values(), ignore_index=True))
         
         # 获取所有交易日期
-        all_dates = sorted(set(
-            df["date"].unique()
-            for df in all_data.values()
-        ))
-        all_dates = pd.to_datetime(all_dates).unique()
-        all_dates = sorted(all_dates)
+        all_dates_set = set()
+        for code, df in all_data.items():
+            for d in df["date"].unique():
+                all_dates_set.add(pd.Timestamp(d))
+        all_dates = sorted(all_dates_set)
         
         # 逐日回测
         current_date_idx = 0
@@ -186,7 +185,9 @@ class BacktestEngine:
                 
                 # 执行信号
                 for signal in signals:
-                    if signal.date != date:
+                    # 比较日期（转换为相同类型）
+                    signal_date = pd.Timestamp(signal.date).date() if hasattr(signal.date, 'date') else pd.Timestamp(signal.date).date()
+                    if signal_date != date.date() if hasattr(date, 'date') else pd.Timestamp(date).date():
                         continue
                     
                     self._execute_signal(signal, df.iloc[-1])

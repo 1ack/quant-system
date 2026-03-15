@@ -6,14 +6,18 @@
 - 日 K 线数据
 - 实时行情
 """
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 import requests
 import re
 from datetime import datetime, timedelta
 from typing import List, Optional
 from loguru import logger
 
-from .models import StockInfo, KLine
-from ..config import settings
+from data.models import StockInfo, KLine
+from config import settings
 
 
 class DataIngestor:

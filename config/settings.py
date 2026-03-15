@@ -21,7 +21,7 @@ class MySQLConfig(BaseModel):
     port: int = 3306
     database: str = "quant"
     user: str = "root"
-    password: str = ""
+    password: str = "quant123"
 
 
 class Settings(BaseModel):
@@ -67,10 +67,13 @@ def load_settings() -> Settings:
             port=int(os.getenv("QUANT_MYSQL__PORT", "3306")),
             database=os.getenv("QUANT_MYSQL__DATABASE", "quant"),
             user=os.getenv("QUANT_MYSQL__USER", "root"),
-            password=os.getenv("QUANT_MYSQL__PASSWORD", ""),
+            password=os.getenv("QUANT_MYSQL__PASSWORD", "quant123"),
         ),
         log_level=os.getenv("QUANT_LOG_LEVEL", "INFO"),
     )
 
 
 settings = load_settings()
+
+if __name__ == "__main__":
+    print(settings)

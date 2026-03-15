@@ -4,12 +4,16 @@
 ClickHouse: K 线等时序数据
 MySQL: 股票列表、策略、回测结果
 """
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from datetime import datetime
 from typing import List, Optional
 from loguru import logger
 
-from .models import KLine, StockInfo, BacktestResult, TradeRecord
-from ..config import get_clickhouse_client, get_mysql_session
+from data.models import KLine, StockInfo, BacktestResult, TradeRecord
+from config import get_clickhouse_client, get_mysql_session
 
 
 class DataStorage:
@@ -101,11 +105,11 @@ class DataStorage:
         
         if start_date:
             where_clauses.append("date >= %(start_date)s")
-            params["start_date"] = start_date
+            params["start_date"] = start_date.strftime('%Y-%m-%d') if hasattr(start_date, 'strftime') else start_date
         
         if end_date:
             where_clauses.append("date <= %(end_date)s")
-            params["end_date"] = end_date
+            params["end_date"] = end_date.strftime('%Y-%m-%d') if hasattr(end_date, 'strftime') else end_date
         
         where_sql = " AND ".join(where_clauses)
         
