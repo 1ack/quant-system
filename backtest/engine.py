@@ -150,7 +150,16 @@ class BacktestEngine:
                 all_data[code] = df
         
         if not all_data:
-            raise ValueError("未找到任何股票数据")
+            # 调试信息
+            logger.error(f"codes 参数：{codes}")
+            logger.error(f"all_data 为空，尝试获取数据...")
+            for code in codes:
+                try:
+                    test_klines = self.storage.get_klines(code, start_date=self.config.start_date, end_date=self.config.end_date)
+                    logger.error(f"股票 {code}: {len(test_klines) if test_klines else 0} 条数据")
+                except Exception as e:
+                    logger.error(f"股票 {code} 获取失败：{e}")
+            raise ValueError(f"未找到任何股票数据（请求代码：{codes}）")
         
         # 策略初始化
         strategy.init(pd.concat(all_data.values(), ignore_index=True))
