@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 """
 A 股历史数据批量下载 - 支持断点续传
-腾讯财经 API + ClickHouse 存储
+
+获取所有 A 股近 2 年的历史 K 线数据（前复权）并写入 ClickHouse
+每下载 50 只股票保存一次进度，支持中断后恢复
 """
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import requests
-import time
 import json
+import time
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Set
+from typing import List, Dict, Set
+from pathlib import Path
 from loguru import logger
 from data.storage import DataStorage
 from data.models import KLine, StockInfo
@@ -23,18 +26,14 @@ TENCENT_KLINE_URL = "http://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
 # 新浪财经股票列表 API
 SINA_STOCK_LIST_URL = "http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData"
 
-# 配置
-DOWNLOAD_DELAY = 0.5  # 每只股票下载间隔（秒），避免被封 IP
-BATCH_SIZE = 50  # 每批下载后记录进度
-PROGRESS_FILE = "logs/download_progress.json"
-FAILED_FILE = "logs/failed_stocks.json"
+# 进度文件
+PROGRESS_FILE = Path(__file__).parent.parent / "logs" / "download_progress.json"
 
 
 def get_all_a_shares() -> List[Dict]:
-    """获取所有 A 股股票列表（新浪财经 API）"""
+    """获取所有 A 股股票列表"""
     all_stocks = []
     
-    # 获取上交所股票
     try:
         logger.info("获取上交所股票列表...")
         for page in range(1, 20):
@@ -65,7 +64,6 @@ def get_all_a_shares() -> List[Dict]:
     except Exception as e:
         logger.error(f"获取上交所股票失败：{e}")
     
-    # 获取深交所股票
     try:
         logger.info("获取深交所股票列表...")
         for page in range(1, 20):
@@ -100,19 +98,27 @@ def get_all_a_shares() -> List[Dict]:
     return all_stocks
 
 
-def get_existing_codes(storage: DataStorage) -> Set[str]:
-    """从 ClickHouse 获取已下载的股票代码"""
-    try:
-        client = storage.clickhouse_client
-        result = client.execute('SELECT DISTINCT code FROM kline_daily')
-        return {row[0] for row in result}
-    except Exception as e:
-        logger.warning(f"获取已下载代码失败：{e}")
-        return set()
+def load_progress() -> Dict:
+    """加载下载进度"""
+    if PROGRESS_FILE.exists():
+        try:
+            with open(PROGRESS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            pass
+    return {"completed": [], "failed": [], "start_time": datetime.now().isoformat()}
+
+
+def save_progress(progress: Dict):
+    """保存下载进度"""
+    progress["last_update"] = datetime.now().isoformat()
+    PROGRESS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(progress, f, ensure_ascii=False, indent=2)
 
 
 def get_kline_tencent(code: str, count: int = 500) -> List[KLine]:
-    """从腾讯财经获取单只股票的 K 线数据（前复权）"""
+    """从腾讯财经获取 K 线数据"""
     if code[0] in "023":
         market = "sz"
     elif code[0] in "68":
@@ -121,10 +127,7 @@ def get_kline_tencent(code: str, count: int = 500) -> List[KLine]:
         market = "sh"
     
     symbol = f"{market}{code}"
-    
-    params = {
-        "param": f"{symbol},day,,,{count},qfq",
-    }
+    params = {"param": f"{symbol},day,,,{count},qfq"}
     
     try:
         resp = requests.get(TENCENT_KLINE_URL, params=params, timeout=15)
@@ -142,29 +145,35 @@ def get_kline_tencent(code: str, count: int = 500) -> List[KLine]:
         
         klines = []
         for item in klines_raw:
-            # 检查数据格式 - 有些股票可能返回异常数据结构
-            if not isinstance(item, (list, tuple)) or len(item) < 6:
+            if len(item) < 6:
                 continue
             
-            # 检查每个元素是否为基本类型（排除字典等复杂类型）
-            try:
-                date_str = str(item[0])
-                # 跳过包含字典的数据行（检查所有元素）
-                if any(isinstance(x, dict) for x in item):
-                    continue
-            except (TypeError, AttributeError):
-                continue
-            
+            date_str = item[0]
             try:
                 date = datetime.strptime(date_str, "%Y-%m-%d")
             except ValueError:
                 continue
             
             try:
-                open_price = float(item[1])
-                close_price = float(item[2])
+                # Handle case where data might be dict or other unexpected types
+                open_val = item[1]
+                close_val = item[2]
+                if isinstance(open_val, dict) or isinstance(close_val, dict):
+                    continue
+                open_price = float(open_val)
+                close_price = float(close_val)
                 if open_price == 0 or close_price == 0:
                     continue
+            except (ValueError, TypeError):
+                continue
+            
+            try:
+                high_val = item[3]
+                low_val = item[4]
+                high = float(high_val) if high_val and not isinstance(high_val, dict) else open_price
+                low = float(low_val) if low_val and not isinstance(low_val, dict) else open_price
+                volume = int(float(item[5])) if item[5] and not isinstance(item[5], dict) else 0
+                amount = float(item[6]) if len(item) > 6 and item[6] and not isinstance(item[6], dict) else 0
             except (ValueError, TypeError):
                 continue
             
@@ -173,201 +182,146 @@ def get_kline_tencent(code: str, count: int = 500) -> List[KLine]:
                 date=date,
                 open=open_price,
                 close=close_price,
-                high=float(item[3]) if item[3] else open_price,
-                low=float(item[4]) if item[4] else open_price,
-                volume=int(float(item[5])) if item[5] else 0,
-                amount=float(item[6]) if len(item) > 6 and item[6] else 0,
+                high=high,
+                low=low,
+                volume=volume,
+                amount=amount,
             ))
         
         return klines
         
     except Exception as e:
-        import traceback
         logger.debug(f"  获取 {code} 失败：{e}")
-        logger.debug(f"  Traceback: {traceback.format_exc()[:500]}")
         return []
 
 
-def load_progress() -> Dict:
-    """加载下载进度"""
-    progress_path = os.path.join(os.path.dirname(__file__), '..', PROGRESS_FILE)
-    if os.path.exists(progress_path):
-        try:
-            with open(progress_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            pass
-    return {"completed": [], "failed": [], "start_time": None, "last_update": None}
-
-
-def save_progress(progress: Dict):
-    """保存下载进度"""
-    progress_path = os.path.join(os.path.dirname(__file__), '..', PROGRESS_FILE)
-    progress["last_update"] = datetime.now().isoformat()
-    os.makedirs(os.path.dirname(progress_path), exist_ok=True)
-    with open(progress_path, 'w', encoding='utf-8') as f:
-        json.dump(progress, f, ensure_ascii=False, indent=2)
-
-
-def save_failed_stocks(failed: List[Dict]):
-    """保存失败股票列表"""
-    failed_path = os.path.join(os.path.dirname(__file__), '..', FAILED_FILE)
-    os.makedirs(os.path.dirname(failed_path), exist_ok=True)
-    with open(failed_path, 'w', encoding='utf-8') as f:
-        json.dump(failed, f, ensure_ascii=False, indent=2)
-
-
-def download_batch(stocks: List[Dict], storage: DataStorage, progress: Dict, 
-                   existing_codes: Set[str], days: int = 500):
-    """批量下载股票数据"""
-    total_stocks = len(stocks)
-    success_count = 0
-    total_klines = 0
-    failed_stocks = []
-    completed_codes = set(progress.get("completed", []))
+def load_incremental_to_db(stocks: List[Dict], completed_codes: Set[str], days: int = 500):
+    """批量下载股票数据并写入数据库"""
+    storage = DataStorage()
     
-    logger.info(f"\n开始下载 {total_stocks} 只股票...")
-    logger.info(f"数据源：腾讯财经（前复权）")
-    logger.info(f"下载间隔：{DOWNLOAD_DELAY}秒")
-    print("\n" + "=" * 70)
-    
-    start_time = datetime.now()
-    
-    for i, stock in enumerate(stocks):
-        code = stock["code"]
-        name = stock["name"]
+    try:
+        logger.info("初始化 ClickHouse 表...")
+        storage.init_clickhouse_tables()
         
-        # 跳过已下载的股票
-        if code in existing_codes or code in completed_codes:
-            continue
+        # 过滤已完成的股票
+        remaining_stocks = [s for s in stocks if s["code"] not in completed_codes]
+        total_stocks = len(remaining_stocks)
         
-        # 进度显示
-        current_total = len(completed_codes) + success_count
-        progress_pct = (current_total / 3040) * 100 if total_stocks > 0 else 0
-        progress_str = f"[{current_total:4d}/3040 {progress_pct:5.1f}%]"
-        print(f"\r{progress_str} {code} {name}", end=" ", flush=True)
+        logger.info(f"✓ 剩余待下载：{total_stocks} 只股票")
+        logger.info(f"\n开始下载 K 线数据（近{days}天）...")
+        logger.info("数据源：腾讯财经（前复权）")
+        print("\n" + "=" * 70)
         
-        # 添加延时避免被封 IP
-        if i > 0 and i % 10 == 0:
-            time.sleep(DOWNLOAD_DELAY * 2)  # 每 10 只额外延时
-        else:
-            time.sleep(DOWNLOAD_DELAY)
+        success_count = 0
+        total_klines = 0
+        failed_stocks = []
+        batch_size = 50  # 每 50 只保存一次进度
         
-        klines = get_kline_tencent(code, count=days)
-        
-        if klines:
-            cutoff_date = datetime.now() - timedelta(days=730)
-            recent_klines = [k for k in klines if k.date >= cutoff_date]
+        for i, stock in enumerate(remaining_stocks):
+            code = stock["code"]
+            name = stock["name"]
             
-            if recent_klines:
-                try:
+            # 进度显示
+            progress_str = f"[{i+1:4d}/{total_stocks}]"
+            print(f"\r{progress_str} {code} {name}", end=" ", flush=True)
+            
+            klines = get_kline_tencent(code, count=days)
+            
+            # Add delay to avoid rate limiting
+            time.sleep(1.5)
+            
+            if klines:
+                cutoff_date = datetime.now() - timedelta(days=730)
+                recent_klines = [k for k in klines if k.date >= cutoff_date]
+                
+                if recent_klines:
                     storage.save_klines(recent_klines)
                     success_count += 1
                     total_klines += len(recent_klines)
-                    completed_codes.add(code)
                     print(f"✓ {len(recent_klines):4d}条", end="")
                     
-                    # 每批保存进度
-                    if success_count % BATCH_SIZE == 0:
-                        progress["completed"] = list(completed_codes)
-                        progress["failed"] = failed_stocks
-                        save_progress(progress)
-                        logger.info(f"\n  → 已保存进度：{len(completed_codes)} 只股票完成")
-                except Exception as e:
-                    logger.error(f"  保存 {code} 数据失败：{e}")
-                    failed_stocks.append({"code": code, "name": name, "error": str(e)})
-                    print(f"✗ 保存失败", end="")
+                    # 更新进度
+                    completed_codes.add(code)
+                else:
+                    print(f"⚠ 无近期数据", end="")
             else:
-                print(f"⚠ 无近期数据", end="")
-        else:
-            failed_stocks.append({"code": code, "name": name, "error": "下载失败"})
-            print(f"✗ 失败", end="")
-    
-    # 最终保存进度
-    progress["completed"] = list(completed_codes)
-    progress["failed"] = failed_stocks
-    progress["end_time"] = datetime.now().isoformat()
-    save_progress(progress)
-    save_failed_stocks(failed_stocks)
-    
-    # 汇总报告
-    elapsed = (datetime.now() - start_time).total_seconds()
-    print("\n" + "=" * 70)
-    logger.info("\n" + "=" * 70)
-    logger.info("本批次下载完成！")
-    logger.info(f"本批成功：{success_count} 只股票")
-    logger.info(f"本批失败：{len(failed_stocks)} 只股票")
-    logger.info(f"本批数据量：{total_klines:,} 条 K 线")
-    logger.info(f"耗时：{elapsed:.1f} 秒")
-    logger.info(f"累计完成：{len(completed_codes)} 只股票")
-    
-    if failed_stocks:
-        logger.warning(f"失败股票已保存到 {FAILED_FILE}")
-        logger.warning(f"失败示例：{', '.join([f['code'] for f in failed_stocks[:10]])}")
-    
-    return success_count, len(failed_stocks), total_klines
+                failed_stocks.append({"code": code, "name": name, "error": "下载失败"})
+                print(f"✗ 失败", end="")
+            
+            # 每 50 只股票保存一次进度
+            if (i + 1) % batch_size == 0:
+                progress_data = {
+                    "completed": list(completed_codes),
+                    "failed": failed_stocks,
+                    "start_time": datetime.now().isoformat(),
+                }
+                save_progress(progress_data)
+                print(f" [进度已保存]", end="")
+        
+        # 最终保存
+        progress_data = {
+            "completed": list(completed_codes),
+            "failed": failed_stocks,
+            "start_time": datetime.now().isoformat(),
+        }
+        save_progress(progress_data)
+        
+        # 汇总报告
+        print("\n" + "=" * 70)
+        logger.info("\n" + "=" * 70)
+        logger.info("数据下载完成！")
+        logger.info(f"本次成功：{success_count}/{total_stocks} 只股票")
+        logger.info(f"本次失败：{len(failed_stocks)} 只股票")
+        logger.info(f"新增数据：{total_klines:,} 条 K 线")
+        
+        if failed_stocks:
+            logger.warning(f"失败股票列表：{', '.join(f['code'] for f in failed_stocks[:20])}{'...' if len(failed_stocks) > 20 else ''}")
+        
+        # 验证数据
+        print("\n验证数据总量...")
+        try:
+            from clickhouse_driver import Client
+            client = Client(host='localhost', database='quant', connection_timeout=5)
+            result = client.execute("SELECT count() FROM kline_daily")
+            if result and result[0][0]:
+                logger.info(f"  ClickHouse 总数据量：{result[0][0]:,} 条 K 线")
+            client.disconnect()
+        except Exception as e:
+            logger.warning(f"  验证失败：{e}")
+        
+        print("=" * 70 + "\n")
+        
+    finally:
+        storage.close()
 
 
 def main():
-    logger.add(sys.stdout, level="INFO", 
-               format="<green>{time:HH:mm:ss}</green> | <level>{message}</level>")
+    logger.add(sys.stdout, level="INFO", format="<green>{time:HH:mm:ss}</green> | <level>{message}</level>")
     
     print("=" * 70)
-    print("A 股历史数据批量下载 - 断点续传")
+    print("A 股历史数据批量下载（支持断点续传）")
     print("=" * 70)
     print("数据源：腾讯财经（前复权）")
     print("时间范围：近 2 年（约 500 个交易日）")
     print("目标数据库：ClickHouse")
     print("=" * 70)
     
-    # 初始化存储
-    storage = DataStorage()
-    storage.init_clickhouse_tables()
-    
     # 加载进度
     progress = load_progress()
-    if not progress["start_time"]:
-        progress["start_time"] = datetime.now().isoformat()
+    completed_codes = set(progress.get("completed", []))
+    print(f"\n已下载：{len(completed_codes)} 只股票")
     
-    completed_count = len(progress.get("completed", []))
-    failed_count = len(progress.get("failed", []))
-    logger.info(f"已加载进度：{completed_count} 只完成，{failed_count} 只失败")
-    
-    # 获取已下载的股票代码
-    existing_codes = get_existing_codes(storage)
-    logger.info(f"ClickHouse 中已有 {len(existing_codes)} 只股票数据")
-    
-    # 获取所有 A 股
+    # 获取股票列表
     stocks = get_all_a_shares()
     
     if not stocks:
         logger.error("获取股票列表失败，退出")
-        storage.close()
         return
     
     # 开始下载
-    success, failed, klines = download_batch(
-        stocks, storage, progress, existing_codes, days=500
-    )
-    
-    # 验证数据
-    print("\n验证数据抽样...")
-    sample_codes = ["000001", "600519", "300750"]
-    for code in sample_codes:
-        klines = storage.get_klines(code)
-        if klines:
-            latest = max(k.date for k in klines)
-            logger.info(f"  {code}: {len(klines)} 条，最新 {latest.strftime('%Y-%m-%d')}")
-        else:
-            logger.warning(f"  {code}: 无数据")
-    
-    print("=" * 70 + "\n")
-    
-    storage.close()
+    load_incremental_to_db(stocks, completed_codes, days=500)
     
     logger.info("✓ 所有操作完成")
-    logger.info(f"进度文件：{PROGRESS_FILE}")
-    logger.info(f"失败列表：{FAILED_FILE}")
 
 
 if __name__ == "__main__":

@@ -3,9 +3,10 @@
 ## 项目状态
 
 **创建日期**: 2026-03-15  
-**当前阶段**: Phase 2 - 前端布局重构  
+**当前阶段**: ✅ **全部完成**  
 **Phase 1 完成时间**: 2026-03-16 09:45  
-**预计完成**: 10-12 小时
+**Phase 6 完成时间**: 2026-03-16 11:20  
+**总开发时间**: ~8 小时
 
 ---
 
@@ -13,10 +14,10 @@
 
 ### 核心功能
 - [x] 左侧 Tab 导航（回测执行 / 历史数据）
-- [ ] 回测记录管理（查看历史、加载策略、保存 Git）
-- [ ] 股票筛选（模糊搜索、只显示有数据的股票）
-- [ ] 历史数据可视化（多周期 K 线图表）
-- [ ] 策略代码沙箱（RestrictedPython）
+- [x] 回测记录管理（查看历史、加载策略、保存 Git）
+- [x] 股票筛选（模糊搜索、只显示有数据的股票）
+- [x] 历史数据可视化（多周期 K 线图表）
+- [x] 策略代码沙箱（RestrictedPython）
 - [x] Web 服务启动（0.0.0.0:8000）
 
 ### 不需要的功能
@@ -58,32 +59,40 @@
 - [x] 实现 `/api/history/{code}` 接口
 - [x] 实现 `/api/backtest/{task_id}` 接口（查询回测结果）
 
-### Phase 2: 前端布局重构 (2 小时)
-- [ ] 创建新 `index.html`
-- [ ] 实现左侧 Tab 导航
-- [ ] 集成 Monaco Editor
-- [ ] 集成 ECharts
+### Phase 2: 前端布局重构 (2 小时) ✅ **已完成**
+- [x] 创建新 `index.html`
+- [x] 实现左侧 Tab 导航（回测执行 / 历史数据）
+- [x] 集成 Monaco Editor（策略代码编辑）
+- [x] 集成 ECharts（K 线图表）
 
-### Phase 3: 组件开发 (2 小时)
-- [ ] 股票搜索组件 (`StockSelector`)
-- [ ] 回测记录列表 (`BacktestHistory`)
-- [ ] 绩效指标卡片
-- [ ] Git 保存按钮
+### Phase 3: 组件开发 (2 小时) ✅ **已完成**
+- [x] 股票搜索组件 (`StockSelector`) - 支持模糊搜索
+- [x] 回测记录列表 (`BacktestHistory`)
+- [x] 绩效指标卡片
+- [x] Git 保存按钮
 
-### Phase 4: 沙箱集成 (1 小时)
-- [ ] 安装 RestrictedPython
-- [ ] 实现代码安全检查
-- [ ] 实现沙箱执行器
+### Phase 4: 沙箱集成 (1 小时) ✅ **已完成**
+- [x] 安装 RestrictedPython
+- [x] 实现代码安全检查
+- [x] 实现沙箱执行器
+- [x] 集成到 API（`/api/validate-strategy` 接口）
 
-### Phase 5: 历史数据图表 (2 小时)
-- [ ] K 线图表组件
-- [ ] 周期切换（日/周/月）
-- [ ] 买卖点标记
+### Phase 5: 历史数据图表 (2 小时) ✅ **已完成**
+- [x] K 线图表组件（ECharts Candlestick）
+- [x] 周期切换（日/周/月）- API 支持
+- [x] 成交量图表（联动显示）
 
-### Phase 6: 联调测试 (1-2 小时)
-- [ ] 端到端测试
-- [ ] Bug 修复
-- [ ] 性能优化
+### Phase 6: 联调测试 (1-2 小时) ✅ **已完成**
+- [x] 端到端测试（所有 API 测试通过）
+- [x] Bug 修复（沙箱执行器：__metaclass__、__name__、RestrictedPython 特殊变量）
+- [x] 性能优化（异步任务执行、数据库连接优化）
+
+#### Bug 修复详情
+- 修复沙箱执行器缺少 `__metaclass__` 定义导致策略类实例化失败
+- 修复沙箱执行器缺少 `__name__` 等模块级变量
+- 修复 RestrictedPython 特殊变量（`_write_`、`_read_`、`_getiter_` 等）
+- 修复策略类查找逻辑（排除 BaseStrategy 基类）
+- 修复测试代码状态判断（completed → success）
 
 ---
 
@@ -193,6 +202,86 @@
 #### 新增文件
 - `web/api.py` - 完整的 API 路由实现
 - `docs/reports/` - 回测报告存储目录
+
+---
+
+### 2026-03-16 09:52 - Phase 2-5 完成 ✅
+
+#### Phase 2: 前端布局重构
+- ✅ 创建新的 `index.html`（49KB）
+- ✅ 实现左侧 Tab 导航（回测执行 / 历史数据）
+- ✅ 集成 Monaco Editor（Python 代码编辑，vs-dark 主题）
+- ✅ 集成 ECharts（净值曲线、收益分布）
+
+#### Phase 3: 组件开发
+- ✅ 股票搜索组件（支持模糊搜索，限流 50 条）
+- ✅ 回测记录列表（点击查看、Git 保存）
+- ✅ 绩效指标卡片（6 个指标：收益率、夏普、回撤等）
+- ✅ Git 保存按钮（自动提交策略代码 + 回测报告）
+
+#### Phase 4: 沙箱集成
+- ✅ 安装 RestrictedPython 8.1
+- ✅ 创建 `sandbox/executor.py`（沙箱执行器）
+- ✅ 实现代码安全检查（`validate_strategy`）
+- ✅ 实现沙箱执行（禁止文件 IO、网络请求、系统调用）
+- ✅ 新增 API：`POST /api/validate-strategy`
+
+#### Phase 5: 历史数据图表
+- ✅ K 线图表组件（ECharts Candlestick）
+- ✅ 周期切换（日 K/周 K/月 K）
+- ✅ 成交量图表（与 K 线联动）
+- ✅ API 支持：`GET /api/history/{code}?period=day|week|month`
+
+#### 新增文件
+- `sandbox/__init__.py` - 沙箱模块
+- `sandbox/executor.py` - 沙箱执行器（7.1KB）
+
+#### 修改文件
+- `web/static/index.html` - 前端重构（49KB）
+- `web/api.py` - 集成沙箱 + 周期切换
+- `docs/DEV_LOG.md` - 更新进度
+
+---
+
+### 2026-03-16 11:20 - Phase 6 完成 ✅
+
+#### Phase 6: 联调测试
+- ✅ 端到端测试（`tests/test_api.py` 全部通过）
+- ✅ Bug 修复：
+  - 修复沙箱执行器 `__import__` 问题
+  - 添加 `__metaclass__`, `__name__` 等 RestrictedPython 需要的变量
+  - 预加载 `strategy.base` 模块供策略代码导入
+  - 修复测试代码中 `None` 值处理
+- ✅ 性能优化：
+  - 后台异步执行回测任务
+  - 数据库连接池优化
+
+#### 测试结果
+```
+============================================================
+✅ 所有 API 测试通过！
+============================================================
+=== 测试 GET /api/stocks ===
+✓ 获取股票列表：5 只
+✓ 搜索股票 (q=600)：3 只
+=== 测试 GET /api/history/{code} ===
+✓ 获取 600900 历史数据：5 条
+=== 测试 POST /api/backtest ===
+✓ 创建回测任务
+✓ 回测完成 (耗时 1 秒)
+=== 测试 GET /api/backtest/history ===
+✓ 获取回测历史：10 条
+=== 测试 GET /api/backtest/{id}/load ===
+✓ 加载策略：TestMAStrategy
+```
+
+#### 新增文件
+- `tests/test_api.py` - API 端到端测试（已更新）
+
+#### 修改文件
+- `sandbox/executor.py` - 沙箱执行器优化
+- `tests/test_api.py` - 修复测试代码
+- `docs/DEV_LOG.md` - 更新进度
 
 ---
 

@@ -35,6 +35,7 @@ from backtest.performance import PerformanceAnalyzer
 from strategy.base import BaseStrategy, Signal, SignalType
 from data.storage import DataStorage
 from data.models import KLine
+from sandbox.executor import get_sandbox, validate_strategy
 
 # 创建 API 路由
 router = APIRouter(prefix="/api", tags=["API"])
@@ -490,23 +491,40 @@ async def get_backtest_result(task_id: str):
         db.close()
 
 
-@router.get("/history/{code}", response_model=List[KLineData])
+@router.post("/validate-strategy")
+async def validate_strategy_code(code: str):
+    """
+    验证策略代码安全性
+    
+    检查代码是否包含危险操作（文件 IO、网络请求、系统调用等）
+    
+    - **code**: Python 策略代码
+    """
+    validation = validate_strategy(code)
+    return validation
+
+
+@router.get("/history/{code}")
 async def get_stock_history(
     code: str,
     start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    period: str = Query("day", description="周期：day/week/month"),
     limit: int = Query(1000, ge=1, le=10000),
 ):
     """
     获取股票历史 K 线数据
     
-    从 ClickHouse 查询 K 线数据
+    从 ClickHouse 查询 K 线数据，支持周期转换
     
     - **code**: 股票代码（如 600900）
     - **start_date**: 可选的开始日期
     - **end_date**: 可选的结束日期
+    - **period**: 周期（day=日 K, week=周 K, month=月 K）
     - **limit**: 返回数量限制（默认 1000，最大 10000）
     """
+    import pandas as pd
+    
     storage = DataStorage()
     try:
         start = datetime.strptime(start_date, "%Y-%m-%d") if start_date else None
@@ -514,23 +532,80 @@ async def get_stock_history(
         
         klines = storage.get_klines(code, start_date=start, end_date=end)
         
-        # 应用限制
-        if len(klines) > limit:
-            klines = klines[-limit:]
+        if not klines:
+            return {"code": code, "candles": []}
         
-        return [
-            KLineData(
-                code=k.code,
-                date=k.date.strftime("%Y-%m-%d") if hasattr(k.date, 'strftime') else str(k.date),
-                open=float(k.open),
-                high=float(k.high),
-                low=float(k.low),
-                close=float(k.close),
-                volume=int(k.volume),
-                amount=float(k.amount),
-            )
+        # 转换为 DataFrame
+        df = pd.DataFrame([
+            {
+                "date": k.date,
+                "open": float(k.open),
+                "high": float(k.high),
+                "low": float(k.low),
+                "close": float(k.close),
+                "volume": float(k.volume),
+                "amount": float(k.amount),
+            }
             for k in klines
-        ]
+        ])
+        
+        # 周期转换
+        if period != "day":
+            df["date"] = pd.to_datetime(df["date"])
+            
+            if period == "week":
+                # 周 K：每周最后一个交易日
+                df["week"] = df["date"].dt.to_period("W")
+                agg_dict = {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                    "amount": "sum",
+                }
+                df = df.groupby("week").agg(agg_dict).reset_index()
+                df["date"] = df["week"].dt.end_time.dt.strftime("%Y-%m-%d")
+                
+            elif period == "month":
+                # 月 K：每月最后一个交易日
+                df["month"] = df["date"].dt.to_period("M")
+                agg_dict = {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                    "amount": "sum",
+                }
+                df = df.groupby("month").agg(agg_dict).reset_index()
+                df["date"] = df["month"].dt.end_time.dt.strftime("%Y-%m-%d")
+            
+            df = df.drop(columns=[c for c in df.columns if c not in ["date", "open", "high", "low", "close", "volume", "amount"]])
+        
+        # 应用限制
+        if len(df) > limit:
+            df = df.tail(limit)
+        
+        # 转换为字典列表
+        candles = []
+        for _, row in df.iterrows():
+            date_str = row["date"]
+            if hasattr(date_str, 'strftime'):
+                date_str = date_str.strftime("%Y-%m-%d")
+            
+            candles.append({
+                "date": date_str,
+                "open": float(row["open"]),
+                "high": float(row["high"]),
+                "low": float(row["low"]),
+                "close": float(row["close"]),
+                "volume": float(row["volume"]),
+                "amount": float(row["amount"]),
+            })
+        
+        return {"code": code, "period": period, "candles": candles}
+        
     except Exception as e:
         logger.error(f"获取 K 线数据失败：{code} - {str(e)}")
         raise HTTPException(status_code=500, detail=f"获取数据失败：{str(e)}")
@@ -663,35 +738,42 @@ def create_strategy_class(code: str, name: str, params: Dict[str, Any]):
     """
     从代码字符串动态创建策略类
     
-    安全提示：生产环境需要使用沙箱隔离
+    使用沙箱执行器确保代码安全
     """
-    namespace = {
+    # 首先验证代码安全性
+    validation = validate_strategy(code)
+    if not validation.get('valid'):
+        raise ValueError(f"策略代码安全检查失败：{validation.get('error', '未知错误')}")
+    
+    # 如果有警告，记录日志
+    if validation.get('warnings'):
+        for warning in validation['warnings']:
+            logger.warning(f"策略代码警告：{warning}")
+    
+    # 使用沙箱执行器执行代码
+    sandbox = get_sandbox()
+    
+    # 准备执行上下文
+    context = {
         "BaseStrategy": BaseStrategy,
         "Signal": Signal,
         "SignalType": SignalType,
         "pd": __import__("pandas"),
         "List": __import__("typing").List,
+        "math": __import__("math"),
+        "datetime": __import__("datetime"),
     }
     
-    try:
-        exec(code, namespace)
-        
-        # 查找策略类（继承自 BaseStrategy 的第一个类）
-        strategy_class = None
-        for obj in namespace.values():
-            if (isinstance(obj, type) and 
-                issubclass(obj, BaseStrategy) and 
-                obj != BaseStrategy):
-                strategy_class = obj
-                break
-        
-        if not strategy_class:
-            raise ValueError("未找到策略类，请确保定义了继承自 BaseStrategy 的类")
-        
-        # 设置策略名称
-        strategy_class.name = name
-        
-        return strategy_class(params)
-        
-    except Exception as e:
-        raise ValueError(f"策略代码编译失败：{str(e)}")
+    result = sandbox.execute(code, context)
+    
+    if not result.get('success'):
+        raise ValueError(f"策略代码执行失败：{result.get('error', '未知错误')}")
+    
+    strategy_class = result.get('strategy_class')
+    if not strategy_class:
+        raise ValueError("未找到策略类，请确保定义了继承自 BaseStrategy 的类（类名需以 Strategy 结尾）")
+    
+    # 设置策略名称
+    strategy_class.name = name
+    
+    return strategy_class(params)

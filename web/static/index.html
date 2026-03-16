@@ -29,44 +29,106 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: #f5f7fa;
+            height: 100vh;
+            overflow: hidden;
         }
         
         #app {
-            min-height: 100vh;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         
+        /* 头部 */
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px 40px;
+            padding: 15px 30px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
         }
         
         .header h1 {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 600;
         }
         
         .header p {
             opacity: 0.9;
-            margin-top: 5px;
+            font-size: 13px;
+            margin-top: 3px;
+        }
+        
+        /* 主容器 */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* 左侧导航 */
+        .sidebar {
+            width: 220px;
+            background: white;
+            border-right: 1px solid #e4e7ed;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        
+        .nav-menu {
+            padding: 10px 0;
+        }
+        
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #606266;
             font-size: 14px;
         }
         
-        .main-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 20px 40px;
-            max-width: 1800px;
-            margin: 0 auto;
+        .nav-item:hover {
+            background: #f5f7fa;
         }
         
+        .nav-item.active {
+            background: #ecf5ff;
+            color: #409eff;
+            border-right: 3px solid #409eff;
+        }
+        
+        .nav-item .icon {
+            font-size: 18px;
+        }
+        
+        /* 内容区域 */
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            background: #f5f7fa;
+        }
+        
+        .tab-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 面板样式 */
         .panel {
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
             overflow: hidden;
+            margin-bottom: 20px;
         }
         
         .panel-header {
@@ -87,13 +149,19 @@
             padding: 20px;
         }
         
+        /* 编辑器容器 */
         .editor-container {
-            height: 400px;
+            height: 500px;
             border: 1px solid #dcdfe6;
             border-radius: 4px;
             overflow: hidden;
         }
         
+        .editor-container-small {
+            height: 350px;
+        }
+        
+        /* 表单布局 */
         .form-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -101,21 +169,64 @@
             margin-bottom: 15px;
         }
         
-        .result-section {
-            margin-bottom: 30px;
+        /* 双栏布局 */
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 100%;
         }
         
-        .result-section h3 {
-            font-size: 14px;
-            color: #909399;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        /* 股票选择器 */
+        .stock-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
         }
         
+        .stock-tag {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .stock-tag:hover {
+            transform: scale(1.05);
+        }
+        
+        .stock-tag.selected {
+            background: #409eff !important;
+            color: white;
+        }
+        
+        /* 运行按钮 */
+        .run-btn {
+            width: 100%;
+            height: 45px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        /* 状态徽章 */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-pending { background: #909399; color: white; }
+        .status-running { background: #409eff; color: white; }
+        .status-completed { background: #67c23a; color: white; }
+        .status-failed { background: #f56c6c; color: white; }
+        
+        /* 绩效指标卡片 */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -128,7 +239,7 @@
         }
         
         .metric-value {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             color: #303133;
         }
@@ -147,65 +258,67 @@
             margin-top: 5px;
         }
         
+        /* 图表容器 */
         .chart-container {
-            height: 350px;
+            height: 400px;
             margin-bottom: 20px;
         }
         
-        .stock-selector {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 10px;
+        .chart-container-small {
+            height: 300px;
         }
         
-        .stock-tag {
+        /* 结果区域 */
+        .result-section {
+            margin-bottom: 25px;
+        }
+        
+        .result-section h3 {
+            font-size: 14px;
+            color: #909399;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* 回测记录列表 */
+        .history-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            padding: 15px;
+            border: 1px solid #e4e7ed;
+            border-radius: 6px;
+            margin-bottom: 10px;
             cursor: pointer;
             transition: all 0.2s;
         }
         
-        .stock-tag:hover {
-            transform: scale(1.05);
+        .history-item:hover {
+            border-color: #409eff;
+            background: #ecf5ff;
         }
         
-        .stock-tag.selected {
-            background: #409eff !important;
-            color: white;
-        }
-        
-        .run-btn {
-            width: 100%;
-            height: 45px;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
+        .history-item-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            z-index: 9999;
+            margin-bottom: 8px;
         }
         
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
+        .history-item-title {
+            font-weight: 600;
+            color: #303133;
         }
         
-        .status-pending { background: #909399; color: white; }
-        .status-running { background: #409eff; color: white; }
-        .status-completed { background: #67c23a; color: white; }
-        .status-failed { background: #f56c6c; color: white; }
+        .history-item-meta {
+            font-size: 13px;
+            color: #909399;
+        }
         
+        /* 交易表格 */
         .trade-table {
             width: 100%;
             border-collapse: collapse;
@@ -225,194 +338,335 @@
             color: #606266;
         }
         
-        .trade-table .buy { color: #f56c6c; }
-        .trade-table .sell { color: #67c23a; }
+        .trade-table .buy { color: #f56c6c; font-weight: 600; }
+        .trade-table .sell { color: #67c23a; font-weight: 600; }
+        
+        /* K 线图容器 */
+        .kline-container {
+            height: 500px;
+        }
+        
+        /* 周期切换按钮 */
+        .period-switch {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        /* 加载覆盖层 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
     </style>
 </head>
 <body>
     <div id="app">
-        <!-- 顶部导航 -->
+        <!-- 头部 -->
         <div class="header">
-            <h1>📈 量化回测系统</h1>
-            <p>A 股量化策略回测平台 - 编辑策略、执行回测、分析绩效</p>
+            <div>
+                <h1>📈 量化回测系统</h1>
+                <p>A 股量化策略回测平台 - 编辑策略、执行回测、分析绩效</p>
+            </div>
+            <div>
+                <el-button size="small" @click="refreshData">🔄 刷新</el-button>
+            </div>
         </div>
         
         <!-- 主容器 -->
         <div class="main-container">
-            <!-- 左侧：策略编辑和配置 -->
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <!-- 策略编辑器 -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2>📝 策略代码</h2>
-                        <el-button size="small" @click="loadTemplate">加载模板</el-button>
+            <!-- 左侧导航 -->
+            <div class="sidebar">
+                <div class="nav-menu">
+                    <div class="nav-item" :class="{ active: activeTab === 'backtest' }" @click="activeTab = 'backtest'">
+                        <span class="icon">🚀</span>
+                        <span>回测执行</span>
                     </div>
-                    <div class="panel-body">
-                        <div class="editor-container" ref="editorContainer"></div>
-                    </div>
-                </div>
-                
-                <!-- 回测配置 -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2>⚙️ 回测配置</h2>
-                    </div>
-                    <div class="panel-body">
-                        <div class="form-row">
-                            <el-form-item label="开始日期">
-                                <el-date-picker
-                                    v-model="config.startDate"
-                                    type="date"
-                                    placeholder="选择日期"
-                                    format="YYYY-MM-DD"
-                                    value-format="YYYY-MM-DD"
-                                    style="width: 100%"
-                                />
-                            </el-form-item>
-                            <el-form-item label="结束日期">
-                                <el-date-picker
-                                    v-model="config.endDate"
-                                    type="date"
-                                    placeholder="选择日期"
-                                    format="YYYY-MM-DD"
-                                    value-format="YYYY-MM-DD"
-                                    style="width: 100%"
-                                />
-                            </el-form-item>
-                        </div>
-                        
-                        <div class="form-row">
-                            <el-form-item label="初始资金">
-                                <el-input-number 
-                                    v-model="config.initialCapital" 
-                                    :min="10000"
-                                    :step="100000"
-                                    style="width: 100%"
-                                />
-                            </el-form-item>
-                            <el-form-item label="手续费率">
-                                <el-input-number 
-                                    v-model="config.commissionRate" 
-                                    :min="0"
-                                    :max="0.01"
-                                    :step="0.0001"
-                                    :precision="4"
-                                    style="width: 100%"
-                                />
-                            </el-form-item>
-                        </div>
-                        
-                        <el-form-item label="选择股票">
-                            <el-input 
-                                v-model="stockSearch" 
-                                placeholder="搜索股票代码或名称"
-                                prefix-icon="Search"
-                                @input="searchStocks"
-                            />
-                            <div class="stock-selector">
-                                <el-tag
-                                    v-for="stock in stocks"
-                                    :key="stock.code"
-                                    class="stock-tag"
-                                    :class="{ selected: config.codes.includes(stock.code) }"
-                                    @click="toggleStock(stock.code)"
-                                >
-                                    {{ stock.code }} {{ stock.name }}
-                                </el-tag>
-                            </div>
-                        </el-form-item>
-                        
-                        <el-button 
-                            type="primary" 
-                            class="run-btn"
-                            @click="runBacktest"
-                            :loading="running"
-                        >
-                            🚀 开始回测
-                        </el-button>
+                    <div class="nav-item" :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">
+                        <span class="icon">📊</span>
+                        <span>历史数据</span>
                     </div>
                 </div>
             </div>
             
-            <!-- 右侧：结果展示 -->
-            <div class="panel">
-                <div class="panel-header">
-                    <h2>📊 回测结果</h2>
-                    <div v-if="currentTask">
-                        <span class="status-badge" :class="'status-' + currentTask.status">
-                            {{ statusText(currentTask.status) }}
-                        </span>
-                    </div>
-                </div>
-                <div class="panel-body" v-loading="running">
-                    <div v-if="!result">
-                        <el-empty description="暂无回测结果，请先运行回测" />
-                    </div>
-                    
-                    <div v-else>
-                        <!-- 绩效指标 -->
-                        <div class="result-section">
-                            <h3>绩效指标</h3>
-                            <div class="metrics-grid">
-                                <div class="metric-card">
-                                    <div class="metric-value" :class="valueClass(result.metrics.total_return)">
-                                        {{ formatPercent(result.metrics.total_return) }}
+            <!-- 内容区域 -->
+            <div class="content">
+                <!-- Tab 1: 回测执行 -->
+                <div v-if="activeTab === 'backtest'" class="tab-content">
+                    <div class="two-columns">
+                        <!-- 左侧：策略编辑和配置 -->
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <!-- 策略编辑器 -->
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h2>📝 策略代码</h2>
+                                    <div>
+                                        <el-button size="small" @click="loadTemplate">加载模板</el-button>
+                                        <el-button size="small" @click="saveStrategy">💾 保存</el-button>
                                     </div>
-                                    <div class="metric-label">总收益率</div>
                                 </div>
-                                <div class="metric-card">
-                                    <div class="metric-value" :class="valueClass(result.metrics.annual_return)">
-                                        {{ formatPercent(result.metrics.annual_return) }}
+                                <div class="panel-body">
+                                    <div class="editor-container" ref="editorContainer"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 回测配置 -->
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h2>⚙️ 回测配置</h2>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="form-row">
+                                        <el-form-item label="开始日期">
+                                            <el-date-picker
+                                                v-model="config.startDate"
+                                                type="date"
+                                                placeholder="选择日期"
+                                                format="YYYY-MM-DD"
+                                                value-format="YYYY-MM-DD"
+                                                style="width: 100%"
+                                            />
+                                        </el-form-item>
+                                        <el-form-item label="结束日期">
+                                            <el-date-picker
+                                                v-model="config.endDate"
+                                                type="date"
+                                                placeholder="选择日期"
+                                                format="YYYY-MM-DD"
+                                                value-format="YYYY-MM-DD"
+                                                style="width: 100%"
+                                            />
+                                        </el-form-item>
                                     </div>
-                                    <div class="metric-label">年化收益</div>
-                                </div>
-                                <div class="metric-card">
-                                    <div class="metric-value">{{ result.metrics.sharpe_ratio.toFixed(2) }}</div>
-                                    <div class="metric-label">夏普比率</div>
-                                </div>
-                                <div class="metric-card">
-                                    <div class="metric-value negative">{{ formatPercent(result.metrics.max_drawdown) }}</div>
-                                    <div class="metric-label">最大回撤</div>
-                                </div>
-                                <div class="metric-card">
-                                    <div class="metric-value">{{ formatPercent(result.metrics.win_rate) }}</div>
-                                    <div class="metric-label">胜率</div>
-                                </div>
-                                <div class="metric-card">
-                                    <div class="metric-value">{{ result.metrics.total_trades }}</div>
-                                    <div class="metric-label">交易次数</div>
+                                    
+                                    <div class="form-row">
+                                        <el-form-item label="初始资金">
+                                            <el-input-number 
+                                                v-model="config.initialCapital" 
+                                                :min="10000"
+                                                :step="100000"
+                                                style="width: 100%"
+                                            />
+                                        </el-form-item>
+                                        <el-form-item label="手续费率">
+                                            <el-input-number 
+                                                v-model="config.commissionRate" 
+                                                :min="0"
+                                                :max="0.01"
+                                                :step="0.0001"
+                                                :precision="4"
+                                                style="width: 100%"
+                                            />
+                                        </el-form-item>
+                                    </div>
+                                    
+                                    <el-form-item label="选择股票">
+                                        <el-input 
+                                            v-model="stockSearch" 
+                                            placeholder="搜索股票代码或名称"
+                                            prefix-icon="Search"
+                                            @input="searchStocks"
+                                        />
+                                        <div class="stock-selector">
+                                            <el-tag
+                                                v-for="stock in filteredStocks"
+                                                :key="stock.code"
+                                                class="stock-tag"
+                                                :class="{ selected: config.codes.includes(stock.code) }"
+                                                @click="toggleStock(stock.code)"
+                                            >
+                                                {{ stock.code }} {{ stock.name }}
+                                            </el-tag>
+                                        </div>
+                                    </el-form-item>
+                                    
+                                    <el-button 
+                                        type="primary" 
+                                        class="run-btn"
+                                        @click="runBacktest"
+                                        :loading="running"
+                                    >
+                                        🚀 开始回测
+                                    </el-button>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- 净值曲线 -->
-                        <div class="result-section">
-                            <h3>净值曲线</h3>
-                            <div ref="valueChart" class="chart-container"></div>
+                        <!-- 右侧：结果展示 -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>📊 回测结果</h2>
+                                <div v-if="currentTask">
+                                    <span class="status-badge" :class="'status-' + currentTask.status">
+                                        {{ statusText(currentTask.status) }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="panel-body" v-loading="running">
+                                <div v-if="!result">
+                                    <el-empty description="暂无回测结果，请先运行回测" />
+                                </div>
+                                
+                                <div v-else>
+                                    <!-- 绩效指标 -->
+                                    <div class="result-section">
+                                        <h3>绩效指标</h3>
+                                        <div class="metrics-grid">
+                                            <div class="metric-card">
+                                                <div class="metric-value" :class="valueClass(result.metrics.total_return)">
+                                                    {{ formatPercent(result.metrics.total_return) }}
+                                                </div>
+                                                <div class="metric-label">总收益率</div>
+                                            </div>
+                                            <div class="metric-card">
+                                                <div class="metric-value" :class="valueClass(result.metrics.annual_return)">
+                                                    {{ formatPercent(result.metrics.annual_return) }}
+                                                </div>
+                                                <div class="metric-label">年化收益</div>
+                                            </div>
+                                            <div class="metric-card">
+                                                <div class="metric-value">{{ result.metrics.sharpe_ratio.toFixed(2) }}</div>
+                                                <div class="metric-label">夏普比率</div>
+                                            </div>
+                                            <div class="metric-card">
+                                                <div class="metric-value negative">{{ formatPercent(result.metrics.max_drawdown) }}</div>
+                                                <div class="metric-label">最大回撤</div>
+                                            </div>
+                                            <div class="metric-card">
+                                                <div class="metric-value">{{ formatPercent(result.metrics.win_rate) }}</div>
+                                                <div class="metric-label">胜率</div>
+                                            </div>
+                                            <div class="metric-card">
+                                                <div class="metric-value">{{ result.metrics.total_trades }}</div>
+                                                <div class="metric-label">交易次数</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 净值曲线 -->
+                                    <div class="result-section">
+                                        <h3>净值曲线</h3>
+                                        <div ref="valueChart" class="chart-container-small"></div>
+                                    </div>
+                                    
+                                    <!-- 交易记录 -->
+                                    <div class="result-section">
+                                        <h3>交易记录</h3>
+                                        <el-table :data="result.trades" style="width: 100%" max-height="250">
+                                            <el-table-column prop="date" label="日期" width="100" />
+                                            <el-table-column prop="code" label="代码" width="80" />
+                                            <el-table-column prop="direction" label="方向" width="70">
+                                                <template #default="{ row }">
+                                                    <span :class="row.direction">{{ row.direction === 'buy' ? '买入' : '卖出' }}</span>
+                                                </template>
+                                            </el-table-column>
+                                            <el-table-column prop="price" label="价格" width="90" />
+                                            <el-table-column prop="volume" label="数量" width="90" />
+                                            <el-table-column prop="amount" label="金额" />
+                                        </el-table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab 2: 历史数据 -->
+                <div v-if="activeTab === 'history'" class="tab-content">
+                    <div class="two-columns">
+                        <!-- 左侧：股票搜索和 K 线图 -->
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <!-- 股票搜索 -->
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h2>🔍 选择股票</h2>
+                                </div>
+                                <div class="panel-body">
+                                    <el-input 
+                                        v-model="historyStockSearch" 
+                                        placeholder="输入股票代码或名称搜索"
+                                        prefix-icon="Search"
+                                        @input="searchHistoryStocks"
+                                        clearable
+                                    />
+                                    <div class="stock-selector" style="max-height: 200px;">
+                                        <el-tag
+                                            v-for="stock in filteredHistoryStocks"
+                                            :key="stock.code"
+                                            class="stock-tag"
+                                            :class="{ selected: selectedHistoryStock === stock.code }"
+                                            @click="selectHistoryStock(stock.code)"
+                                        >
+                                            {{ stock.code }} {{ stock.name }}
+                                        </el-tag>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- K 线图表 -->
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h2>📈 K 线图表</h2>
+                                    <div class="period-switch">
+                                        <el-radio-group v-model="klinePeriod" size="small" @change="loadKlineData">
+                                            <el-radio-button label="day">日 K</el-radio-button>
+                                            <el-radio-button label="week">周 K</el-radio-button>
+                                            <el-radio-button label="month">月 K</el-radio-button>
+                                        </el-radio-group>
+                                    </div>
+                                </div>
+                                <div class="panel-body">
+                                    <div ref="klineChart" class="kline-container"></div>
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- 收益分布 -->
-                        <div class="result-section">
-                            <h3>收益分布</h3>
-                            <div ref="returnChart" class="chart-container"></div>
-                        </div>
-                        
-                        <!-- 交易记录 -->
-                        <div class="result-section">
-                            <h3>交易记录</h3>
-                            <el-table :data="result.trades" style="width: 100%" max-height="300">
-                                <el-table-column prop="date" label="日期" width="100" />
-                                <el-table-column prop="code" label="代码" width="80" />
-                                <el-table-column prop="direction" label="方向" width="70">
-                                    <template #default="{ row }">
-                                        <span :class="row.direction">{{ row.direction === 'buy' ? '买入' : '卖出' }}</span>
-                                    </template>
-                                </el-table-column>
-                                <el-table-column prop="price" label="价格" width="90" />
-                                <el-table-column prop="volume" label="数量" width="90" />
-                                <el-table-column prop="amount" label="金额" />
-                                <el-table-column prop="commission" label="手续费" width="90" />
-                            </el-table>
+                        <!-- 右侧：回测历史记录 -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h2>📋 回测记录</h2>
+                                <el-button size="small" @click="loadHistory">🔄 刷新</el-button>
+                            </div>
+                            <div class="panel-body">
+                                <div class="history-list" v-loading="loadingHistory">
+                                    <div v-if="historyList.length === 0">
+                                        <el-empty description="暂无回测记录" />
+                                    </div>
+                                    
+                                    <div 
+                                        v-for="item in historyList" 
+                                        :key="item.id"
+                                        class="history-item"
+                                        @click="loadBacktestDetail(item.id)"
+                                    >
+                                        <div class="history-item-header">
+                                            <span class="history-item-title">{{ item.strategy_name }}</span>
+                                            <span class="status-badge" :class="'status-' + item.status">
+                                                {{ statusText(item.status) }}
+                                            </span>
+                                        </div>
+                                        <div class="history-item-meta">
+                                            <div>股票：{{ item.codes.join(', ') }}</div>
+                                            <div>时间：{{ item.start_date }} 至 {{ item.end_date }}</div>
+                                            <div>收益率：<span :class="valueClass(item.metrics?.total_return || 0)">
+                                                {{ formatPercent(item.metrics?.total_return || 0) }}
+                                            </span></div>
+                                            <div style="margin-top: 5px;">
+                                                <el-button size="small" @click.stop="loadBacktestDetail(item.id)">加载</el-button>
+                                                <el-button size="small" @click.stop="saveToGit(item.id)">Git 保存</el-button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -421,12 +675,17 @@
     </div>
     
     <script>
-        const { createApp, ref, reactive, onMounted, watch } = Vue;
+        const { createApp, ref, reactive, onMounted, watch, computed } = Vue;
         
         createApp({
             setup() {
                 // 编辑器实例
                 let editor = null;
+                let klineChartInstance = null;
+                let valueChartInstance = null;
+                
+                // 当前 Tab
+                const activeTab = ref('backtest');
                 
                 // 默认策略代码
                 const defaultCode = `"""
@@ -494,20 +753,43 @@ class MACrossStrategy(BaseStrategy):
 
                 // 状态
                 const editorContainer = ref(null);
+                const klineChart = ref(null);
                 const valueChart = ref(null);
-                const returnChart = ref(null);
                 const running = ref(false);
+                const loadingHistory = ref(false);
                 const currentTask = ref(null);
                 const result = ref(null);
                 const stockSearch = ref("");
-                const stocks = ref([
-                    { code: "000001", name: "平安银行" },
-                    { code: "000002", name: "万科 A" },
-                    { code: "600000", name: "浦发银行" },
-                    { code: "600036", name: "招商银行" },
-                    { code: "601318", name: "中国平安" },
-                    { code: "600519", name: "贵州茅台" },
-                ]);
+                const historyStockSearch = ref("");
+                const selectedHistoryStock = ref("");
+                const klinePeriod = ref('day');
+                
+                // 股票列表
+                const allStocks = ref([]);
+                const historyStocks = ref([]);
+                
+                // 计算属性：过滤后的股票列表
+                const filteredStocks = computed(() => {
+                    if (!stockSearch.value.trim()) {
+                        return allStocks.value.slice(0, 50);
+                    }
+                    const q = stockSearch.value.toLowerCase();
+                    return allStocks.value.filter(s => 
+                        s.code.toLowerCase().includes(q) || 
+                        s.name.toLowerCase().includes(q)
+                    ).slice(0, 50);
+                });
+                
+                const filteredHistoryStocks = computed(() => {
+                    if (!historyStockSearch.value.trim()) {
+                        return historyStocks.value.slice(0, 100);
+                    }
+                    const q = historyStockSearch.value.toLowerCase();
+                    return historyStocks.value.filter(s => 
+                        s.code.toLowerCase().includes(q) || 
+                        s.name.toLowerCase().includes(q)
+                    ).slice(0, 100);
+                });
                 
                 // 配置
                 const config = reactive({
@@ -515,44 +797,94 @@ class MACrossStrategy(BaseStrategy):
                     endDate: "2023-12-31",
                     initialCapital: 1000000,
                     commissionRate: 0.0003,
-                    codes: ["000001", "600000"],
+                    codes: [],
+                });
+                
+                // 回测历史记录
+                const historyList = ref([]);
+                
+                // 初始化
+                onMounted(async () => {
+                    // 初始化 Monaco Editor
+                    await initEditor();
+                    
+                    // 加载股票列表
+                    await loadStocks();
+                    
+                    // 加载回测历史
+                    await loadHistory();
                 });
                 
                 // 初始化编辑器
-                onMounted(() => {
-                    require.config({ paths: { vs: "https://unpkg.com/monaco-editor/min/vs" } });
-                    require(["vs/editor/editor.main"], () => {
-                        editor = monaco.editor.create(editorContainer.value, {
-                            value: defaultCode,
-                            language: "python",
-                            theme: "vs-dark",
-                            automaticLayout: true,
-                            fontSize: 14,
-                            minimap: { enabled: false },
-                            scrollBeyondLastLine: false,
+                const initEditor = () => {
+                    return new Promise((resolve) => {
+                        require.config({ paths: { vs: "https://unpkg.com/monaco-editor/min/vs" } });
+                        require(["vs/editor/editor.main"], () => {
+                            editor = monaco.editor.create(editorContainer.value, {
+                                value: defaultCode,
+                                language: "python",
+                                theme: "vs-dark",
+                                automaticLayout: true,
+                                fontSize: 14,
+                                minimap: { enabled: false },
+                                scrollBeyondLastLine: false,
+                                lineNumbers: "on",
+                                roundedSelection: false,
+                                readOnly: false,
+                                cursorStyle: "line",
+                                automaticLayout: true,
+                            });
+                            resolve();
                         });
                     });
-                    
-                    // 搜索股票
-                    searchStocks();
-                });
+                };
+                
+                // 加载股票列表
+                const loadStocks = async () => {
+                    try {
+                        const res = await fetch('/api/stocks');
+                        const data = await res.json();
+                        allStocks.value = data;
+                        historyStocks.value = data;
+                    } catch (err) {
+                        console.error('加载股票列表失败:', err);
+                    }
+                };
                 
                 // 搜索股票
                 const searchStocks = async () => {
                     if (stockSearch.value.trim()) {
-                        const res = await fetch(`/api/stocks?q=${encodeURIComponent(stockSearch.value)}`);
-                        const data = await res.json();
-                        stocks.value = data;
+                        try {
+                            const res = await fetch(`/api/stocks?q=${encodeURIComponent(stockSearch.value)}`);
+                            const data = await res.json();
+                            allStocks.value = data;
+                        } catch (err) {
+                            console.error('搜索股票失败:', err);
+                        }
                     } else {
-                        stocks.value = [
-                            { code: "000001", name: "平安银行" },
-                            { code: "000002", name: "万科 A" },
-                            { code: "600000", name: "浦发银行" },
-                            { code: "600036", name: "招商银行" },
-                            { code: "601318", name: "中国平安" },
-                            { code: "600519", name: "贵州茅台" },
-                        ];
+                        await loadStocks();
                     }
+                };
+                
+                // 搜索历史股票
+                const searchHistoryStocks = async () => {
+                    if (historyStockSearch.value.trim()) {
+                        try {
+                            const res = await fetch(`/api/stocks?q=${encodeURIComponent(historyStockSearch.value)}`);
+                            const data = await res.json();
+                            historyStocks.value = data;
+                        } catch (err) {
+                            console.error('搜索股票失败:', err);
+                        }
+                    } else {
+                        historyStocks.value = allStocks.value;
+                    }
+                };
+                
+                // 选择历史股票
+                const selectHistoryStock = (code) => {
+                    selectedHistoryStock.value = code;
+                    loadKlineData();
                 };
                 
                 // 切换股票选择
@@ -569,6 +901,15 @@ class MACrossStrategy(BaseStrategy):
                 const loadTemplate = () => {
                     if (editor) {
                         editor.setValue(defaultCode);
+                    }
+                };
+                
+                // 保存策略
+                const saveStrategy = () => {
+                    if (editor) {
+                        const code = editor.getValue();
+                        localStorage.setItem('saved_strategy', code);
+                        ElementPlus.ElMessage.success('策略已保存到本地');
                     }
                 };
                 
@@ -625,7 +966,7 @@ class MACrossStrategy(BaseStrategy):
                                 running.value = false;
                                 ElementPlus.ElMessage.success("回测完成");
                                 setTimeout(() => {
-                                    renderCharts();
+                                    renderValueChart();
                                 }, 100);
                             } else if (data.status === "failed") {
                                 running.value = false;
@@ -641,12 +982,161 @@ class MACrossStrategy(BaseStrategy):
                     poll();
                 };
                 
-                // 渲染图表
-                const renderCharts = () => {
-                    if (!result.value || !result.value.daily_data) return;
+                // 加载回测历史
+                const loadHistory = async () => {
+                    loadingHistory.value = true;
+                    try {
+                        const res = await fetch('/api/backtest/history');
+                        const data = await res.json();
+                        historyList.value = data;
+                    } catch (err) {
+                        ElementPlus.ElMessage.error('加载历史记录失败');
+                    } finally {
+                        loadingHistory.value = false;
+                    }
+                };
+                
+                // 加载回测详情
+                const loadBacktestDetail = async (id) => {
+                    try {
+                        const res = await fetch(`/api/backtest/${id}/load`);
+                        const data = await res.json();
+                        
+                        if (data.strategy_code) {
+                            if (editor) {
+                                editor.setValue(data.strategy_code);
+                            }
+                            activeTab.value = 'backtest';
+                            ElementPlus.ElMessage.success('策略已加载');
+                        }
+                    } catch (err) {
+                        ElementPlus.ElMessage.error('加载策略失败');
+                    }
+                };
+                
+                // 保存到 Git
+                const saveToGit = async (id) => {
+                    try {
+                        const res = await fetch(`/api/backtest/${id}/save-git`, {
+                            method: 'POST',
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            ElementPlus.ElMessage.success(`已保存到 Git: ${data.commit_hash?.substring(0, 7)}`);
+                        } else {
+                            ElementPlus.ElMessage.error('保存失败');
+                        }
+                    } catch (err) {
+                        ElementPlus.ElMessage.error('保存失败');
+                    }
+                };
+                
+                // 加载 K 线数据
+                const loadKlineData = async () => {
+                    if (!selectedHistoryStock.value) {
+                        ElementPlus.ElMessage.warning('请先选择股票');
+                        return;
+                    }
                     
-                    // 净值曲线
-                    const valueChartInstance = echarts.init(valueChart.value);
+                    try {
+                        const res = await fetch(`/api/history/${selectedHistoryStock.value}?period=${klinePeriod.value}`);
+                        const data = await res.json();
+                        
+                        if (data.candles && data.candles.length > 0) {
+                            renderKlineChart(data.candles);
+                        } else {
+                            ElementPlus.ElMessage.warning('暂无 K 线数据');
+                        }
+                    } catch (err) {
+                        ElementPlus.ElMessage.error('加载 K 线数据失败');
+                    }
+                };
+                
+                // 渲染 K 线图表
+                const renderKlineChart = (candles) => {
+                    if (!klineChart.value) return;
+                    
+                    if (!klineChartInstance) {
+                        klineChartInstance = echarts.init(klineChart.value);
+                    }
+                    
+                    // 处理数据
+                    const dates = candles.map(c => c.date);
+                    const data = candles.map(c => [c.open, c.close, c.low, c.high]);
+                    const volumes = candles.map((c, i) => [i, c.volume]);
+                    
+                    const option = {
+                        tooltip: {
+                            trigger: 'axis',
+                            axisPointer: { type: 'cross' }
+                        },
+                        grid: [
+                            { left: '10%', right: '8%', top: '10%', height: '60%' },
+                            { left: '10%', right: '8%', top: '75%', height: '15%' }
+                        ],
+                        xAxis: [
+                            {
+                                type: 'category',
+                                data: dates,
+                                gridIndex: 0,
+                            },
+                            {
+                                type: 'category',
+                                gridIndex: 1,
+                                data: dates,
+                            }
+                        ],
+                        yAxis: [
+                            {
+                                type: 'value',
+                                gridIndex: 0,
+                                scale: true,
+                            },
+                            {
+                                type: 'value',
+                                gridIndex: 1,
+                                scale: true,
+                            }
+                        ],
+                        series: [
+                            {
+                                name: 'K 线',
+                                type: 'candlestick',
+                                data: data,
+                                itemStyle: {
+                                    color: '#ef232a',
+                                    color0: '#14b143',
+                                    borderColor: '#ef232a',
+                                    borderColor0: '#14b143'
+                                }
+                            },
+                            {
+                                name: '成交量',
+                                type: 'bar',
+                                xAxisIndex: 1,
+                                yAxisIndex: 1,
+                                data: volumes,
+                                itemStyle: {
+                                    color: (params) => {
+                                        const idx = params.dataIndex;
+                                        return data[idx][1] >= data[idx][0] ? '#ef232a' : '#14b143';
+                                    }
+                                }
+                            }
+                        ]
+                    };
+                    
+                    klineChartInstance.setOption(option);
+                };
+                
+                // 渲染净值曲线
+                const renderValueChart = () => {
+                    if (!result.value || !result.value.daily_data || !valueChart.value) return;
+                    
+                    if (!valueChartInstance) {
+                        valueChartInstance = echarts.init(valueChart.value);
+                    }
+                    
                     const dates = result.value.daily_data.map(d => d.date);
                     const values = result.value.daily_data.map(d => d.value);
                     
@@ -668,27 +1158,13 @@ class MACrossStrategy(BaseStrategy):
                             itemStyle: { color: "#409eff" },
                         }],
                     });
-                    
-                    // 收益分布
-                    const returnChartInstance = echarts.init(returnChart.value);
-                    const dailyReturns = result.value.daily_data.map((d, i) => {
-                        if (i === 0) return 0;
-                        return (d.value - result.value.daily_data[i - 1].value) / result.value.daily_data[i - 1].value * 100;
-                    });
-                    
-                    returnChartInstance.setOption({
-                        tooltip: { trigger: "axis" },
-                        grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
-                        xAxis: { type: "category", data: dates },
-                        yAxis: { type: "value" },
-                        series: [{
-                            data: dailyReturns,
-                            type: "bar",
-                            itemStyle: {
-                                color: (params) => params.value >= 0 ? "#67c23a" : "#f56c6c",
-                            },
-                        }],
-                    });
+                };
+                
+                // 刷新数据
+                const refreshData = async () => {
+                    await loadStocks();
+                    await loadHistory();
+                    ElementPlus.ElMessage.success('数据已刷新');
                 };
                 
                 // 工具函数
@@ -713,19 +1189,34 @@ class MACrossStrategy(BaseStrategy):
                 };
                 
                 return {
+                    activeTab,
                     editorContainer,
+                    klineChart,
                     valueChart,
-                    returnChart,
                     running,
+                    loadingHistory,
                     currentTask,
                     result,
                     stockSearch,
-                    stocks,
+                    historyStockSearch,
+                    selectedHistoryStock,
+                    klinePeriod,
+                    filteredStocks,
+                    filteredHistoryStocks,
                     config,
+                    historyList,
                     loadTemplate,
+                    saveStrategy,
                     searchStocks,
+                    searchHistoryStocks,
+                    selectHistoryStock,
                     toggleStock,
                     runBacktest,
+                    loadHistory,
+                    loadBacktestDetail,
+                    saveToGit,
+                    loadKlineData,
+                    refreshData,
                     statusText,
                     valueClass,
                     formatPercent,

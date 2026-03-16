@@ -88,10 +88,16 @@ def test_history_api():
     # 测试获取长江电力历史数据
     resp = requests.get(f"{BASE_URL}/api/history/600900?limit=5")
     assert resp.status_code == 200
-    klines = resp.json()
+    data = resp.json()
+    
+    # API 返回格式：{code, period, candles}
+    assert "code" in data
+    assert "candles" in data
+    assert data["code"] == "600900"
+    
+    klines = data["candles"]
     print(f"✓ 获取 600900 历史数据：{len(klines)} 条")
     assert len(klines) > 0
-    assert klines[0]["code"] == "600900"
     assert "open" in klines[0]
     assert "close" in klines[0]
     
@@ -102,15 +108,15 @@ def test_backtest_api():
     """测试回测 API"""
     print("=== 测试 POST /api/backtest ===")
     
-    # 准备回测请求（使用有数据的日期范围）
-    start_date = datetime(2026, 1, 1)
+    # 准备回测请求（使用有充足数据的日期范围）
+    start_date = datetime(2025, 1, 1)
     end_date = datetime(2026, 3, 13)
     
     backtest_request = {
         "strategy_code": STRATEGY_CODE,
         "strategy_name": "TestMAStrategy",
         "strategy_params": {},
-        "codes": ["600900"],  # 长江电力
+        "codes": ["600538"],  # 国发股份（有 1443 条数据）
         "start_date": start_date.strftime("%Y-%m-%d"),
         "end_date": end_date.strftime("%Y-%m-%d"),
         "initial_capital": 1000000.0,
@@ -135,15 +141,19 @@ def test_backtest_api():
         result = resp.json()
         status = result["status"]
         
-        if status == "completed":
+        if status == "success":
             print(f"✓ 回测完成 (耗时 {i+1}秒)")
             assert "result" in result
             assert "metrics" in result["result"]
             metrics = result["result"]["metrics"]
-            print(f"  - 总收益率：{metrics.get('total_return', 0)*100:.2f}%")
-            print(f"  - 夏普比率：{metrics.get('sharpe_ratio', 0):.2f}")
-            print(f"  - 最大回撤：{metrics.get('max_drawdown', 0)*100:.2f}%")
-            print(f"  - 交易次数：{metrics.get('total_trades', 0)}")
+            total_return = metrics.get('total_return')
+            sharpe = metrics.get('sharpe_ratio')
+            max_dd = metrics.get('max_drawdown')
+            trades = metrics.get('total_trades', 0)
+            print(f"  - 总收益率：{total_return*100:.2f}%" if total_return is not None else "  - 总收益率：N/A")
+            print(f"  - 夏普比率：{sharpe:.2f}" if sharpe is not None else "  - 夏普比率：N/A")
+            print(f"  - 最大回撤：{max_dd*100:.2f}%" if max_dd is not None else "  - 最大回撤：N/A")
+            print(f"  - 交易次数：{trades}")
             break
         elif status == "failed":
             print(f"✗ 回测失败：{result.get('error', 'Unknown error')}")
