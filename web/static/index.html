@@ -400,7 +400,7 @@
             <!-- 内容区域 -->
             <div class="content">
                 <!-- Tab 1: 回测执行 -->
-                <div v-if="activeTab === 'backtest'" class="tab-content">
+                <div v-show="activeTab === 'backtest'" class="tab-content" key="backtest">
                     <div class="two-columns">
                         <!-- 左侧：策略编辑和配置 -->
                         <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -584,7 +584,7 @@
                 </div>
                 
                 <!-- Tab 2: 历史数据 -->
-                <div v-if="activeTab === 'history'" class="tab-content">
+                <div v-show="activeTab === 'history'" class="tab-content" key="history">
                     <div class="two-columns">
                         <!-- 左侧：股票搜索和 K 线图 -->
                         <div style="display: flex; flex-direction: column; gap: 20px;">
