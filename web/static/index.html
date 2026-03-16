@@ -469,22 +469,26 @@
                                     </div>
                                     
                                     <el-form-item label="选择股票">
-                                        <el-input 
-                                            v-model="stockSearch" 
-                                            placeholder="搜索股票代码或名称"
-                                            prefix-icon="Search"
-                                            @input="searchStocks"
-                                        />
-                                        <div class="stock-selector">
-                                            <el-tag
-                                                v-for="stock in filteredStocks"
+                                        <el-select
+                                            v-model="config.codes"
+                                            multiple
+                                            filterable
+                                            placeholder="请选择股票（可多选）"
+                                            style="width: 100%"
+                                            :max-collapse-tags="3"
+                                        >
+                                            <el-option
+                                                v-for="stock in allStocks"
                                                 :key="stock.code"
-                                                class="stock-tag"
-                                                :class="{ selected: config.codes.includes(stock.code) }"
-                                                @click="toggleStock(stock.code)"
-                                            >
-                                                {{ stock.code }} {{ stock.name }}
-                                            </el-tag>
+                                                :label="`${stock.code} - ${stock.name}`"
+                                                :value="stock.code"
+                                            />
+                                        </el-select>
+                                        <div style="margin-top: 8px; font-size: 12px; color: #909399;">
+                                            已选择：<el-tag size="small" type="success">{{ config.codes.length }}</el-tag> 只股票
+                                            <span v-if="config.codes.length > 0" style="margin-left: 8px;">
+                                                {{ config.codes.join(', ') }}
+                                            </span>
                                         </div>
                                     </el-form-item>
                                     
@@ -590,23 +594,22 @@
                                     <h2>🔍 选择股票</h2>
                                 </div>
                                 <div class="panel-body">
-                                    <el-input 
-                                        v-model="historyStockSearch" 
-                                        placeholder="输入股票代码或名称搜索"
-                                        prefix-icon="Search"
-                                        @input="searchHistoryStocks"
-                                        clearable
-                                    />
-                                    <div class="stock-selector" style="max-height: 200px;">
-                                        <el-tag
+                                    <el-select
+                                        v-model="selectedHistoryStock"
+                                        filterable
+                                        placeholder="请选择股票"
+                                        style="width: 100%"
+                                        @change="loadKlineData"
+                                    >
+                                        <el-option
                                             v-for="stock in filteredHistoryStocks"
                                             :key="stock.code"
-                                            class="stock-tag"
-                                            :class="{ selected: selectedHistoryStock === stock.code }"
-                                            @click="selectHistoryStock(stock.code)"
-                                        >
-                                            {{ stock.code }} {{ stock.name }}
-                                        </el-tag>
+                                            :label="`${stock.code} - ${stock.name}`"
+                                            :value="stock.code"
+                                        />
+                                    </el-select>
+                                    <div style="margin-top: 8px; font-size: 12px; color: #909399;">
+                                        当前：<el-tag size="small" type="info">{{ selectedHistoryStock || '未选择' }}</el-tag>
                                     </div>
                                 </div>
                             </div>
@@ -759,7 +762,6 @@ class MACrossStrategy(BaseStrategy):
                 const loadingHistory = ref(false);
                 const currentTask = ref(null);
                 const result = ref(null);
-                const stockSearch = ref("");
                 const historyStockSearch = ref("");
                 const selectedHistoryStock = ref("");
                 const klinePeriod = ref('day');
@@ -768,21 +770,10 @@ class MACrossStrategy(BaseStrategy):
                 const allStocks = ref([]);
                 const historyStocks = ref([]);
                 
-                // 计算属性：过滤后的股票列表
-                const filteredStocks = computed(() => {
-                    if (!stockSearch.value.trim()) {
-                        return allStocks.value.slice(0, 50);
-                    }
-                    const q = stockSearch.value.toLowerCase();
-                    return allStocks.value.filter(s => 
-                        s.code.toLowerCase().includes(q) || 
-                        s.name.toLowerCase().includes(q)
-                    ).slice(0, 50);
-                });
-                
+                // 计算属性：历史 Tab 过滤后的股票列表
                 const filteredHistoryStocks = computed(() => {
                     if (!historyStockSearch.value.trim()) {
-                        return historyStocks.value.slice(0, 100);
+                        return historyStocks.value.slice(0, 200);
                     }
                     const q = historyStockSearch.value.toLowerCase();
                     return historyStocks.value.filter(s => 
@@ -851,21 +842,6 @@ class MACrossStrategy(BaseStrategy):
                     }
                 };
                 
-                // 搜索股票
-                const searchStocks = async () => {
-                    if (stockSearch.value.trim()) {
-                        try {
-                            const res = await fetch(`/api/stocks?q=${encodeURIComponent(stockSearch.value)}`);
-                            const data = await res.json();
-                            allStocks.value = data;
-                        } catch (err) {
-                            console.error('搜索股票失败:', err);
-                        }
-                    } else {
-                        await loadStocks();
-                    }
-                };
-                
                 // 搜索历史股票
                 const searchHistoryStocks = async () => {
                     if (historyStockSearch.value.trim()) {
@@ -885,16 +861,6 @@ class MACrossStrategy(BaseStrategy):
                 const selectHistoryStock = (code) => {
                     selectedHistoryStock.value = code;
                     loadKlineData();
-                };
-                
-                // 切换股票选择
-                const toggleStock = (code) => {
-                    const index = config.codes.indexOf(code);
-                    if (index > -1) {
-                        config.codes.splice(index, 1);
-                    } else {
-                        config.codes.push(code);
-                    }
                 };
                 
                 // 加载模板
