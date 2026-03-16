@@ -1,0 +1,21 @@
+[Unit]
+Description=Quant Backtest Web Service
+After=network.target postgresql.service clickhouse-server.service
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/.openclaw/workspace/quant-backtest
+Environment="PATH=/home/admin/.openclaw/workspace/quant-backtest/venv/bin"
+ExecStart=/home/admin/.openclaw/workspace/quant-backtest/venv/bin/python -m web.main
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/admin/.openclaw/workspace/quant-backtest/logs/web.log
+StandardError=append:/home/admin/.openclaw/workspace/quant-backtest/logs/web.log
+
+# 资源限制
+LimitNOFILE=65535
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

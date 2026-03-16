@@ -172,7 +172,8 @@ class BacktestEngine:
             # 获取当日数据
             day_data = {}
             for code, df in all_data.items():
-                day_df = df[df["date"] == date]
+                # 转换日期格式进行比较（df['date'] 是 date 对象，date 是 Timestamp）
+                day_df = df[pd.to_datetime(df["date"]) == date]
                 if len(day_df) > 0:
                     day_data[code] = day_df
             
